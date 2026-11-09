@@ -1,0 +1,13 @@
+{
+  "name": "WEB-CREATORS: Digital Empire",
+  "short_name": "Digital Empire",
+  "description": "Build your digital empire: a business simulation and website creation game.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#050A14",
+  "theme_color": "#050A14",
+  "icons": [
+    { "src": "./brand/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./brand/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
