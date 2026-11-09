@@ -1,18 +1,28 @@
-// Tiny hash router: works on any static host and inside a future Capacitor app, with zero dependencies.
+// Tiny router. The current path lives in memory and is mirrored to the URL hash when the
+// host allows it. Navigation therefore works on any static host, inside a Capacitor app,
+// and inside sandboxed preview frames that restrict hash changes.
 import { useSyncExternalStore } from 'react';
 
-const getPath = () => (location.hash.replace(/^#/, '') || '/dashboard');
+const readHash = () => (location.hash.startsWith('#/') ? decodeURI(location.hash.slice(1)) : null);
 
-const subscribe = (cb: () => void) => {
-  window.addEventListener('hashchange', cb);
-  return () => window.removeEventListener('hashchange', cb);
-};
+let current = readHash() ?? '/dashboard';
+const listeners = new Set<() => void>();
+const emit = () => listeners.forEach((l) => l());
 
-export const useRoute = () => useSyncExternalStore(subscribe, getPath, () => '/dashboard');
+window.addEventListener('hashchange', () => {
+  const h = readHash();
+  if (h && h !== current) { current = h; emit(); }
+});
+
+const subscribe = (cb: () => void) => { listeners.add(cb); return () => listeners.delete(cb); };
+
+export const useRoute = () => useSyncExternalStore(subscribe, () => current, () => '/dashboard');
 
 export function navigate(path: string) {
-  if (getPath() === path) return;
-  location.hash = path;
+  if (path === current) return;
+  current = path;
+  try { location.hash = path; } catch { /* host blocks hash changes: memory routing still works */ }
+  emit();
   window.scrollTo({ top: 0 });
 }
 
