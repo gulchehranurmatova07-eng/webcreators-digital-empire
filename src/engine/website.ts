@@ -7,22 +7,24 @@ export interface AssetDef {
   icon: string;
   from: string;
   to: string;
+  /** Illustrated scene drawn for this image (see src/art). */
+  scene: { category: import('./types').CategoryId; color: string; name: string } | 'city';
 }
 
 /** Built-in image assets (drawn as gradient art + icon so the game ships no heavy photos). */
 export const ASSETS: AssetDef[] = [
-  { id: 'dining', label: 'Dining room', icon: 'utensils', from: '#7c2d12', to: '#f59e0b' },
-  { id: 'dish', label: 'Signature dish', icon: 'chef', from: '#14532d', to: '#84cc16' },
-  { id: 'coffee', label: 'Coffee bar', icon: 'coffee', from: '#3b2416', to: '#c08457' },
-  { id: 'room', label: 'Hotel suite', icon: 'bed', from: '#1e3a8a', to: '#60a5fa' },
-  { id: 'pool', label: 'Pool & spa', icon: 'waves', from: '#0e7490', to: '#5eead4' },
-  { id: 'fashion', label: 'Collection', icon: 'shirt', from: '#701a75', to: '#f472b6' },
-  { id: 'store', label: 'Storefront', icon: 'store', from: '#312e81', to: '#a78bfa' },
-  { id: 'workspace', label: 'Workspace', icon: 'monitor', from: '#0f172a', to: '#1E6BFF' },
-  { id: 'team', label: 'Team', icon: 'users', from: '#1f2937', to: '#58A6FF' },
-  { id: 'city', label: 'City view', icon: 'building', from: '#111827', to: '#6366f1' },
-  { id: 'nature', label: 'Nature', icon: 'leaf', from: '#064e3b', to: '#34d399' },
-  { id: 'launch', label: 'Launch', icon: 'rocket', from: '#4c1d95', to: '#1E6BFF' },
+  { id: 'dining', label: 'Dining room', icon: 'utensils', from: '#7c2d12', to: '#f59e0b', scene: { category: 'restaurant', color: '#F97316', name: 'Bistro' } },
+  { id: 'dish', label: 'Signature dish', icon: 'chef', from: '#14532d', to: '#84cc16', scene: { category: 'restaurant', color: '#22C55E', name: 'Kitchen' } },
+  { id: 'coffee', label: 'Coffee bar', icon: 'coffee', from: '#3b2416', to: '#c08457', scene: { category: 'coffee', color: '#C08457', name: 'Café' } },
+  { id: 'room', label: 'Hotel suite', icon: 'bed', from: '#1e3a8a', to: '#60a5fa', scene: { category: 'hotel', color: '#F5B942', name: 'Grand Hotel' } },
+  { id: 'pool', label: 'Pool & spa', icon: 'waves', from: '#0e7490', to: '#5eead4', scene: { category: 'hotel', color: '#14B8A6', name: 'Spa' } },
+  { id: 'fashion', label: 'Collection', icon: 'shirt', from: '#701a75', to: '#f472b6', scene: { category: 'clothing', color: '#EC4899', name: 'Atelier' } },
+  { id: 'store', label: 'Storefront', icon: 'store', from: '#312e81', to: '#a78bfa', scene: { category: 'clothing', color: '#A78BFA', name: 'Boutique' } },
+  { id: 'workspace', label: 'Workspace', icon: 'monitor', from: '#0f172a', to: '#1E6BFF', scene: { category: 'agency', color: '#1E6BFF', name: 'Studio' } },
+  { id: 'team', label: 'Team', icon: 'users', from: '#1f2937', to: '#58A6FF', scene: { category: 'agency', color: '#58A6FF', name: 'Our Team' } },
+  { id: 'city', label: 'City view', icon: 'building', from: '#111827', to: '#6366f1', scene: 'city' },
+  { id: 'nature', label: 'Bay at night', icon: 'leaf', from: '#064e3b', to: '#34d399', scene: 'city' },
+  { id: 'launch', label: 'Launch', icon: 'rocket', from: '#4c1d95', to: '#1E6BFF', scene: { category: 'startup', color: '#A855F7', name: 'Launch' } },
 ];
 
 export const assetById = (id: string) => ASSETS.find((a) => a.id === id) ?? ASSETS[0];

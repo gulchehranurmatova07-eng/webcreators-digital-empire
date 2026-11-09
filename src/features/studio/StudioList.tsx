@@ -8,6 +8,7 @@ import { navigate } from '../../app/router';
 import { Badge, Button, Card, EmptyState, Field, Modal, PageHeader, Progress, cx, inputCls } from '../../ui/kit';
 import { Icon } from '../../ui/Icon';
 import { SiteRenderer } from './SiteRenderer';
+import { DemoGenerator } from './DemoGenerator';
 
 /** Scaled-down live thumbnail of a site. */
 function Thumb({ site }: { site: Website }) {
@@ -24,6 +25,8 @@ export function StudioList() {
   const [picking, setPicking] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<Website | null>(null);
+  const [demoFor, setDemoFor] = useState<string | null>(null);
+  const demoBiz = g.businesses.find((b) => b.id === demoFor);
 
   const startCreate = (templateId: string) => {
     setPicking(templateId);
@@ -41,6 +44,26 @@ export function StudioList() {
   return (
     <>
       <PageHeader eyebrow="Website Studio" title="Your websites" subtitle="Pick a template, customise it in the visual editor, then publish and link it to a business. Better websites attract more customers." />
+
+      {g.businesses.length > 0 && (
+        <div className="panel p-4 sm:p-5 mb-8 relative overflow-hidden">
+          <div className="absolute -right-16 -top-16 size-56 rounded-full bg-cyan/15 blur-3xl pointer-events-none" />
+          <div className="relative flex flex-col lg:flex-row lg:items-center gap-4">
+            <div className="flex items-center gap-3 flex-1">
+              <span className="grid place-items-center size-11 rounded-xl bg-cyan/15 text-cyan shrink-0"><Icon name="sparkles" size={20} /></span>
+              <div><div className="text-[10px] tracking-[0.2em] text-cyan font-semibold">DEMO GENERATOR</div><div className="font-display font-semibold">Generate a complete website from a business brand</div><p className="text-xs text-mute">Preview three styles, then build the real version and edit everything.</p></div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {g.businesses.map((b) => (
+                <button key={b.id} onClick={() => setDemoFor(b.id)} className="flex items-center gap-2 h-10 pl-2 pr-3 rounded-xl border border-line hover:border-cyan bg-ink/50 text-sm transition">
+                  <span className="grid place-items-center size-7 rounded-lg" style={{ background: `${b.color}26`, color: b.color }}><Icon name={b.icon} size={14} /></span>{b.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {demoBiz && <DemoGenerator business={demoBiz} onClose={() => setDemoFor(null)} />}
 
       {g.websites.length > 0 && (
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-10">

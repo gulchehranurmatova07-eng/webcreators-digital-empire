@@ -19,7 +19,7 @@ export function celestiaAdvice(g: GameState): Advice {
   if (g.businesses.length === 0)
     return { title: 'Open your first business', body: `You have ${g.coins} coins. A Digital Agency (200) is cheap to start; a Restaurant (300) has steady demand.`, action: 'Choose a business', route: '/empire/new' };
   if (g.websites.length === 0)
-    return { title: 'Your business is invisible online', body: 'A published website linked to your business raises visibility and conversion. Templates make it quick.', action: 'Open the Studio', route: '/studio' };
+    return { title: 'Your business is invisible online', body: `Generate a demo website for ${g.businesses[0].name} in one tap. A published, linked website raises visibility and conversion.`, action: 'Generate demo', route: `/empire/${g.businesses[0].id}/demo` };
   const draft = g.websites.find((w) => !w.published);
   if (!g.websites.some((w) => w.published) && draft)
     return { title: `Publish "${draft.name}"`, body: 'Draft websites do not attract customers. Publish it when it looks good.', action: 'Edit website', route: `/studio/${draft.id}` };

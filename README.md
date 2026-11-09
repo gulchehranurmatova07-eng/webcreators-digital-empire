@@ -4,14 +4,16 @@
 
 A business simulation and website creation game. You start as a beginner founder with 500 virtual coins in the fictional city of Novara Bay. From there you open businesses, design their websites, win customers, complete missions and learn real web and business skills.
 
-## What's playable (v0.1)
+## What's playable (v0.2)
 
 | Area | What works |
 |---|---|
-| Welcome & onboarding | Branded intro, founder name and avatar, 500 starting coins (recorded in the wallet history) |
-| Dashboard | Live founder level/XP, wallet, business stats, empire profit chart, Celestia advice, active and daily missions, achievements, activity feed |
+| Welcome & founders | Animated city intro; choose Lisa (+20% website visibility), Charlotte (+5 satisfaction), Victor (+25% Academy rewards) or Jack (−20% campaign cost); 500 starting coins |
+| Command Center | Status bar (wallet, income, expenses, profit, reputation, level, End day); animated night map of Novara Bay with your businesses on it; hexagon KPIs; Celestia advice; missions; achievements |
 | Business Empire | 6 categories (Restaurant, Hotel, Clothing Brand, Digital Agency; Coffee Shop at Lv 3, Tech Startup at Lv 5); brand name, color and icon; 4 districts with different traffic and rent; hiring staff; 26 upgrades; 4 marketing campaigns; linking a website; daily simulation with a full cost breakdown; selling a business |
-| Website Studio | 6 templates (Luxe unlocks at Lv 3); visual section editor (add, remove, reorder, edit text, items, images); theme (color, light/dark, font, corners); phone/desktop preview; autosave; publishing; Website Quality Score checklist that affects linked businesses |
+| Demo generator | One tap turns a business brand into a complete website in 3 styles (Signature, Bold, Luxe) with category-specific copy; preview it on phone or desktop, then "Build real version" |
+| Business interiors | Animated scenes per category; tables grow with capacity, staff with hires, customers and reaction bubbles follow the real daily results |
+| Website Studio | 6 templates (Luxe unlocks at Lv 3); layers panel, dotted canvas and inspector; add, duplicate, reorder and delete sections; undo/redo; edit text, items and images; theme (color, light/dark, font, corners); phone/desktop preview; autosave; publishing; Website Quality Score checklist that affects linked businesses |
 | Missions | 12 story missions, 3 daily missions, streak bonuses with a forgiven grace day; every reward is claimable exactly once |
 | Achievements & levels | 13 achievements, XP levels with coin bonuses, 6 founder ranks |
 | Digital Academy | 9 lessons (HTML, CSS, Entrepreneurship) with multiple-choice and coding challenges, a live code preview and instant feedback |
@@ -47,8 +49,13 @@ src/
   store/      Zustand store, selectors, Celestia advisor
   app/        shell, navigation, hash router
   features/   screens: onboarding, dashboard, empire, studio, missions, academy, profile
-  ui/         design-system components and icon registry
+  art/        procedural isometric art: city, interiors, website images (Canvas 2D)
+  ui/         design-system components, HUD panels and icon registry
 ```
+
+## Art and images
+
+The city, interiors and website images are drawn in code at runtime, so the app ships no heavy image files and the art reacts to game state. Founder portraits live in `public/characters/` and the logo in `public/brand/`. Before publishing to app stores, make sure you have the rights to use the portrait images commercially.
 
 ## Next steps
 

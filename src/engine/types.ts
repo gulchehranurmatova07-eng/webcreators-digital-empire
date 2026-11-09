@@ -113,6 +113,7 @@ export interface Player {
   name: string;
   avatar: string;
   createdAt: number;
+  character?: 'lisa' | 'charlotte' | 'victor' | 'jack';
 }
 
 export interface GameState {

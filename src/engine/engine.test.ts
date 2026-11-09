@@ -129,3 +129,31 @@ describe('websites', () => {
     expect(r.state.claimed['level:2']).toBeTruthy();
   });
 });
+
+describe('characters & demo generator', () => {
+  const open = (s: GameState) => E.openBusiness(s, ctx(), { name: 'Bella', tagline: '', category: 'restaurant', location: 'oldtown', color: '#1E6BFF', icon: 'utensils' }).state;
+  const as = (character: 'lisa' | 'charlotte' | 'victor' | 'jack') => E.createPlayer(E.createInitialState(), ctx(), { name: 'Ada', avatar: 'spark', character }).state;
+
+  it('Jack pays 20% less for campaigns', () => {
+    const s = open(as('jack'));
+    const after = E.launchCampaign(s, ctx(), s.businesses[0].id, 'social').state;
+    expect(s.coins - after.coins).toBe(112);
+  });
+
+  it('Victor earns 25% more from lessons', () => {
+    const s = E.completeLesson(as('victor'), ctx(), 'html-1', [1, 1, '<h1>Digital Empire</h1>']).state;
+    expect(s.ledger.find((t) => t.label.startsWith('Lesson') && t.currency === 'xp')!.amount).toBe(75);
+  });
+
+  it('generates a demo website, links it, and it scores well', () => {
+    let s = open(as('lisa'));
+    s = E.generateDemoSite(s, ctx(), { businessId: s.businesses[0].id, style: 'bold', variant: 2 }).state;
+    expect(s.websites).toHaveLength(1);
+    expect(s.businesses[0].websiteId).toBe(s.websites[0].id);
+    expect(qualityScore(s.websites[0])).toBeGreaterThanOrEqual(75);
+  });
+
+  it('rejects unknown characters', () => {
+    expect(() => E.setCharacter(as('lisa'), ctx(), 'daniel' as never)).toThrow();
+  });
+});

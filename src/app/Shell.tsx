@@ -4,7 +4,8 @@ import { claimableCount, levelInfo, timeAgo, unreadCount } from '../store/select
 import * as E from '../engine/engine';
 import { NAV } from './router';
 import { Link } from './Link';
-import { Avatar, Button, Coins, Logo, Modal, Progress, cx } from '../ui/kit';
+import { Button, Coins, Logo, Modal, Progress, cx, fmt } from '../ui/kit';
+import { FounderPortrait } from '../ui/hud';
 import { levelUpCoins } from '../engine/config';
 import { Icon } from '../ui/Icon';
 
@@ -44,24 +45,62 @@ function NotificationsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+function HudSeg({ label, children, tone, to }: { label: string; children: React.ReactNode; tone?: 'good' | 'bad'; to?: string }) {
+  const body = (
+    <>
+      <span className="block text-[9px] font-semibold tracking-[0.16em] uppercase text-mute">{label}</span>
+      <span className={cx('block font-display text-[15px] font-semibold tabular-nums leading-tight mt-0.5', tone === 'good' && 'text-good', tone === 'bad' && 'text-bad')}>{children}</span>
+    </>
+  );
+  const cls = 'hud-seg shrink-0 bg-navy-2/80 border-y border-cyan/20 pl-4 pr-5 lg:pl-5 lg:pr-6 py-1.5 min-w-[74px] lg:min-w-[104px]';
+  return to ? <Link to={to} className={cx(cls, 'hover:bg-brand/20 transition')}>{body}</Link> : <div className={cls}>{body}</div>;
+}
+
+function useEmpireDay() {
+  return useGame((g) => {
+    let income = 0, expenses = 0, rep = 0;
+    for (const b of g.businesses) {
+      const last = b.history[b.history.length - 1];
+      if (last && last.day === g.day - 1) { income += last.revenue; expenses += last.revenue - last.profit; }
+      rep += b.reputation;
+    }
+    return `${income}|${expenses}|${g.businesses.length ? Math.round(rep / g.businesses.length) : 0}`;
+  });
+}
+
 function TopBar() {
   const g = useGame((x) => x);
   const [open, setOpen] = useState(false);
   const unread = unreadCount(g);
   const li = levelInfo(g.xp);
+  const [income, expenses, rep] = useEmpireDay().split('|').map(Number);
+  const profit = income - expenses;
+  const hasDay = g.stats.daysRun > 0 && g.businesses.length > 0;
+  const endDay = (
+    <button onClick={() => act(E.endDay)} disabled={g.businesses.length === 0}
+      className="hud-seg shrink-0 flex items-center gap-2 h-full px-5 lg:px-6 ml-auto lg:ml-0 bg-brand text-white font-display font-semibold text-sm hover:bg-[#2f78ff] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-[0_0_24px_-4px_#1E6BFF]"
+      title={g.businesses.length === 0 ? 'Open a business first' : 'Simulate the next day for all businesses'}>
+      <Icon name="sun" size={16} /> End day {g.day}
+    </button>
+  );
   return (
-    <header className="sticky top-0 z-30 bg-ink/85 backdrop-blur-md border-b border-line">
-      <div className="flex items-center gap-3 h-16 px-4 lg:px-8">
+    <header className="sticky top-0 z-30 bg-ink/90 backdrop-blur-md border-b border-cyan/15">
+      <div className="flex items-center gap-2 h-16 px-3 lg:px-6">
         <div className="lg:hidden"><Link to="/dashboard" aria-label="Dashboard"><Logo /></Link></div>
-        <div className="hidden lg:flex items-center gap-3 text-sm text-mute">
-          <Icon name="calendar" size={15} className="text-brand-2" /> Day {g.day} in Novara Bay
+        <div className="hidden lg:flex items-stretch h-11 -space-x-1.5 min-w-0 overflow-x-auto">
+          <HudSeg label="Wallet" to="/wallet"><Coins value={g.coins} /></HudSeg>
+          <HudSeg label="Income">{hasDay ? `+${fmt(income)}` : '—'}</HudSeg>
+          <HudSeg label="Expenses">{hasDay ? `−${fmt(expenses)}` : '—'}</HudSeg>
+          <HudSeg label="Profit" tone={hasDay ? (profit >= 0 ? 'good' : 'bad') : undefined}>{hasDay ? `${profit >= 0 ? '+' : '−'}${fmt(Math.abs(profit))}` : '—'}</HudSeg>
+          <HudSeg label="Reputation">{g.businesses.length ? `★ ${rep}` : '—'}</HudSeg>
+          <HudSeg label={`Level ${li.level}`} to="/profile">
+            <span className="flex items-center gap-2"><span className="text-sm">{fmt(g.xp)} XP</span><Progress value={li.into} max={li.needed} className="h-1 w-14" label="Level progress" /></span>
+          </HudSeg>
+          {endDay}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Link to="/wallet" className="flex items-center gap-2 h-9 px-3 rounded-xl bg-white/[0.04] border border-line hover:border-line-strong transition text-sm font-semibold" aria-label={`Wallet: ${g.coins} virtual coins`}>
+          <Link to="/wallet" className="lg:hidden flex items-center gap-2 h-9 px-3 rounded-xl bg-white/[0.04] border border-line text-sm font-semibold" aria-label={`Wallet: ${g.coins} virtual coins`}>
             <Coins value={g.coins} />
-          </Link>
-          <Link to="/profile" className="hidden sm:flex items-center gap-2 h-9 px-3 rounded-xl bg-white/[0.04] border border-line hover:border-line-strong transition text-sm" aria-label={`Level ${li.level}`}>
-            <Icon name="zap" size={14} className="text-brand-2" /><span className="font-semibold">Lv {li.level}</span>
           </Link>
           <div className="relative">
             <button onClick={() => setOpen((o) => !o)} className="relative grid place-items-center size-9 rounded-xl bg-white/[0.04] border border-line hover:border-line-strong transition" aria-label={`Notifications (${unread} unread)`} aria-expanded={open}>
@@ -70,8 +109,15 @@ function TopBar() {
             </button>
             {open && <NotificationsPanel onClose={() => setOpen(false)} />}
           </div>
-          <Link to="/profile" className="lg:hidden" aria-label="Profile"><Avatar name={g.player!.avatar} size={36} /></Link>
+          <Link to="/profile" className="lg:hidden" aria-label="Profile"><FounderPortrait size={36} /></Link>
         </div>
+      </div>
+      {/* Mobile HUD strip */}
+      <div className="lg:hidden flex items-stretch h-11 -space-x-1.5 overflow-x-auto px-1 pb-1 scroll-thin">
+        <HudSeg label="Day">{g.day}</HudSeg>
+        <HudSeg label="Profit" tone={hasDay ? (profit >= 0 ? 'good' : 'bad') : undefined}>{hasDay ? `${profit >= 0 ? '+' : '−'}${fmt(Math.abs(profit))}` : '—'}</HudSeg>
+        <HudSeg label="Rep.">{g.businesses.length ? `★ ${rep}` : '—'}</HudSeg>
+        {endDay}
       </div>
     </header>
   );
@@ -105,7 +151,7 @@ function Sidebar({ route }: { route: string }) {
         </div>
       </nav>
       <Link to="/profile" className="m-3 p-3 rounded-2xl border border-line bg-ink/40 hover:border-line-strong transition flex items-center gap-3">
-        <Avatar name={g.player!.avatar} size={38} />
+        <FounderPortrait size={38} />
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold truncate">{g.player!.name}</div>
           <div className="text-[11px] text-mute truncate">{li.rank} · Lv {li.level}</div>
@@ -146,12 +192,12 @@ function Toasts() {
     return () => timers.forEach(clearTimeout);
   }, [toasts, dismiss]);
   return (
-    <div className="fixed z-[60] inset-x-0 bottom-20 lg:bottom-6 lg:left-auto lg:right-6 lg:w-96 flex flex-col items-center lg:items-stretch gap-2 px-4 lg:px-0 pointer-events-none" aria-live="polite">
+    <div className="fixed z-[60] inset-x-0 bottom-[76px] lg:bottom-6 lg:left-auto lg:right-6 lg:w-96 flex flex-col items-center lg:items-stretch gap-2 px-4 lg:px-0 pointer-events-none" aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} role="status"
-          className={cx('pointer-events-auto flex items-center gap-3 max-w-md w-full sm:w-auto rounded-2xl px-4 py-3 border shadow-2xl animate-pop',
+          className={cx('pointer-events-auto flex items-center gap-3 max-w-md w-full sm:w-auto rounded-xl lg:rounded-2xl px-3 py-2 lg:px-4 lg:py-3 border shadow-2xl animate-pop',
             t.kind === 'error' ? 'bg-[#2a0f16] border-bad/40' : t.kind === 'reward' ? 'bg-[#0b1d36] border-brand/50' : 'bg-navy-2 border-line-strong')}>
-          <span className={cx('grid place-items-center size-8 rounded-xl shrink-0', t.kind === 'error' ? 'bg-bad/20 text-bad' : t.kind === 'reward' ? 'bg-brand/25 text-brand-2' : 'bg-white/5 text-soft')}>
+          <span className={cx('grid place-items-center size-7 lg:size-8 rounded-xl shrink-0', t.kind === 'error' ? 'bg-bad/20 text-bad' : t.kind === 'reward' ? 'bg-brand/25 text-brand-2' : 'bg-white/5 text-soft')}>
             <Icon name={t.kind === 'error' ? 'warning' : t.kind === 'reward' ? 'sparkles' : 'info'} size={16} />
           </span>
           <div className="min-w-0">
@@ -193,7 +239,7 @@ export function Shell({ route, children }: { route: string; children: ReactNode 
       <Sidebar route={route} />
       <div className="lg:pl-64">
         <TopBar />
-        <main className="px-4 lg:px-8 pt-6 pb-28 lg:pb-12 max-w-[1240px] mx-auto">{children}</main>
+        <main className="px-4 lg:px-8 pt-6 pb-28 lg:pb-12 max-w-[1480px] mx-auto">{children}</main>
       </div>
       <BottomNav route={route} />
       <Toasts />

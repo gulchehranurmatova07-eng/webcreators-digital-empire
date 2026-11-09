@@ -3,6 +3,7 @@
 import { CAMPAIGNS, CATEGORIES, LOCATIONS, upgradeById } from './config';
 import { websiteEffects } from './website';
 import type { Business, DayReport, Website } from './types';
+import { PERKS, type CharacterId } from './characters';
 
 /** Deterministic pseudo-random number in [0,1) from a string seed (no Math.random in the engine). */
 export function seeded(seed: string) {
@@ -27,11 +28,12 @@ export interface Breakdown {
 const BASE_VISIBILITY = 20;
 const REFERENCE_VISIBILITY = 40;
 
-export function breakdown(b: Business, site: Website | undefined): Breakdown {
+export function breakdown(b: Business, site: Website | undefined, character?: CharacterId): Breakdown {
   const cat = CATEGORIES[b.category];
   const loc = LOCATIONS[b.location];
   const ups = b.upgrades.map(upgradeById).filter((u) => !!u);
-  const web = websiteEffects(site);
+  const web0 = websiteEffects(site);
+  const web = { ...web0, visibility: Math.round(web0.visibility * PERKS.websiteVisibility(character)) };
   const sum = (k: 'visibility' | 'conversion' | 'capacity' | 'satisfaction' | 'ticket' | 'upkeep') =>
     ups.reduce((acc, u) => acc + (u.effects[k] ?? 0), 0);
 
@@ -44,14 +46,14 @@ export function breakdown(b: Business, site: Website | undefined): Breakdown {
     conversion: 1 + sum('conversion') + web.conversion,
     capacity: { base: cat.baseCapacity, staff: capStaff, upgrades: sum('capacity'), total: cat.baseCapacity + capStaff + sum('capacity') },
     ticket: cat.avgTicket * (1 + sum('ticket')),
-    satisfactionTarget: 60 + sum('satisfaction') + web.satisfaction,
+    satisfactionTarget: 60 + sum('satisfaction') + web.satisfaction + PERKS.satisfaction(character),
     dailyFixed: { rent: Math.round(cat.rent * loc.rentMult), wages: b.staff * cat.wage, upkeep: sum('upkeep') },
   };
 }
 
-export function simulateDay(b: Business, site: Website | undefined, day: number): { business: Business; report: DayReport; finishedCampaigns: number } {
+export function simulateDay(b: Business, site: Website | undefined, day: number, character?: CharacterId): { business: Business; report: DayReport; finishedCampaigns: number } {
   const cat = CATEGORIES[b.category];
-  const bd = breakdown(b, site);
+  const bd = breakdown(b, site, character);
   const noise = 0.9 + seeded(`${b.id}:${day}`) * 0.2;
   const repFactor = 0.7 + b.reputation / 200; // 0.7 … 1.2
   const demand = Math.max(0, Math.round(cat.baseDemand * (bd.visibility.total / REFERENCE_VISIBILITY) * repFactor * bd.conversion * noise));

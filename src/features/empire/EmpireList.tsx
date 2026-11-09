@@ -5,6 +5,7 @@ import { navigate } from '../../app/router';
 import { Link } from '../../app/Link';
 import { Badge, Button, Card, Coins, EmptyState, PageHeader, Progress, cx, fmt } from '../../ui/kit';
 import { Icon } from '../../ui/Icon';
+import { sceneImage } from '../../art/Scene';
 
 export function EmpireList() {
   const g = useGame((x) => x);
@@ -34,7 +35,9 @@ export function EmpireList() {
               const last = b.history[b.history.length - 1];
               const site = g.websites.find((w) => w.id === b.websiteId);
               return (
-                <Link key={b.id} to={`/empire/${b.id}`} className="card card-hover p-5 block">
+                <Link key={b.id} to={`/empire/${b.id}`} className="panel card-hover overflow-hidden block">
+                  <img src={sceneImage({ type: 'venue', category: b.category, color: b.color, name: b.name }, 640, 300)} alt="" className="w-full h-36 object-cover border-b border-line" />
+                  <div className="p-5">
                   <div className="flex items-start gap-3">
                     <span className="grid place-items-center size-12 rounded-2xl shrink-0" style={{ background: `${b.color}22`, color: b.color, boxShadow: `inset 0 0 0 1px ${b.color}55` }}><Icon name={b.icon} size={22} /></span>
                     <div className="min-w-0 flex-1">
@@ -55,6 +58,7 @@ export function EmpireList() {
                   <div className="mt-3 flex items-center gap-1.5 text-[11px] text-mute">
                     <Icon name="globe" size={12} className={site?.published ? 'text-good' : ''} />
                     {site ? `${site.name}${site.published ? '' : ' (draft)'}` : 'No website linked'}
+                  </div>
                   </div>
                 </Link>
               );

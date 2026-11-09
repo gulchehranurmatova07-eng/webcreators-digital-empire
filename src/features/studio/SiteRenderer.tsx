@@ -3,17 +3,19 @@
 import type { Section, Website } from '../../engine/types';
 import { FONTS, assetById, readableOn, siteBackground } from '../../engine/website';
 import { Icon } from '../../ui/Icon';
+import { sceneImage } from '../../art/Scene';
 import { cx } from '../../ui/kit';
 
 const RADIUS = { sharp: '3px', soft: '12px', round: '24px' } as const;
 
 export function AssetArt({ id, className, label = true }: { id: string; className?: string; label?: boolean }) {
   const a = assetById(id);
+  const src = sceneImage(a.scene === 'city' ? { type: 'city' } : { type: 'venue', ...a.scene });
   return (
-    <div className={cx('relative overflow-hidden grid place-items-center', className)} style={{ background: `linear-gradient(135deg, ${a.from}, ${a.to})` }} role="img" aria-label={a.label}>
-      <div className="absolute inset-0 opacity-30" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,.5), transparent 45%)' }} />
-      <Icon name={a.icon} size={44} className="relative text-white/85" strokeWidth={1.4} />
-      {label && <span className="absolute bottom-2 left-2 text-[10px] font-medium text-white/80 bg-black/25 rounded px-1.5 py-0.5">{a.label}</span>}
+    <div className={cx('relative overflow-hidden', className)} style={{ background: `linear-gradient(135deg, ${a.from}, ${a.to})` }} role="img" aria-label={a.label}>
+      {src ? <img src={src} alt="" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+        : <div className="absolute inset-0 grid place-items-center"><Icon name={a.icon} size={44} className="text-white/85" strokeWidth={1.4} /></div>}
+      {label && <span className="absolute bottom-2 left-2 text-[10px] font-medium text-white/90 bg-black/40 rounded px-1.5 py-0.5">{a.label}</span>}
     </div>
   );
 }

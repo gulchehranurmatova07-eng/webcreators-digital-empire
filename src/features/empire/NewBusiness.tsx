@@ -6,6 +6,7 @@ import type { CategoryId, LocationId } from '../../engine/types';
 import { navigate } from '../../app/router';
 import { Badge, Button, Card, Coins, Field, PageHeader, cx, fmt, inputCls } from '../../ui/kit';
 import { Icon } from '../../ui/Icon';
+import { VenueScene } from '../../art/Scene';
 
 const STEPS = ['Category', 'Brand', 'Location', 'Open'];
 
@@ -39,7 +40,7 @@ export function NewBusiness() {
     const ok = act((s, c) => E.openBusiness(s, c, { name, tagline, category, location, color, icon }));
     if (ok) {
       const list = useStore.getState().game.businesses;
-      navigate(`/empire/${list[list.length - 1].id}`);
+      navigate(`/empire/${list[list.length - 1].id}/demo`);
     }
   };
 
@@ -91,7 +92,7 @@ export function NewBusiness() {
       )}
 
       {step === 1 && cat && (
-        <div className="grid lg:grid-cols-[1fr_340px] gap-5">
+        <div className="grid lg:grid-cols-[1fr_420px] gap-5">
           <Card className="p-5 sm:p-6 space-y-5">
             <Field label="Business name" hint="2–28 characters. Make it memorable."><input className={inputCls} value={name} maxLength={28} onChange={(e) => setName(e.target.value)} /></Field>
             <Field label="Tagline (optional)" hint="A short promise to customers."><input className={inputCls} value={tagline} maxLength={60} onChange={(e) => setTagline(e.target.value)} placeholder="e.g. Fresh pasta, every day" /></Field>
@@ -120,12 +121,16 @@ export function NewBusiness() {
               <Button disabled={!nameOk} icon="arrow" onClick={() => setStep(2)}>Choose location</Button>
             </div>
           </Card>
-          <Card className="p-6 flex flex-col items-center justify-center text-center">
-            <div className="text-[10px] tracking-[0.2em] text-mute mb-4">BRAND PREVIEW</div>
-            <span className="grid place-items-center size-20 rounded-3xl" style={{ background: `${color}22`, color, boxShadow: `inset 0 0 0 1px ${color}66, 0 20px 40px -20px ${color}` }}><Icon name={icon} size={36} /></span>
-            <div className="font-display text-xl font-semibold mt-4" style={{ color }}>{name || 'Your brand'}</div>
-            <div className="text-sm text-mute mt-1">{tagline || cat.name}</div>
-          </Card>
+          <div className="panel overflow-hidden p-0">
+            <div className="relative">
+              <VenueScene className="h-72" spec={{ category: cat.id, color, name: name || 'Your brand', capacity: cat.baseCapacity + cat.capacityPerStaff, customers: Math.round((cat.baseCapacity + cat.capacityPerStaff) * 0.7), turnedAway: 0, staff: 1, satisfaction: 80 }} />
+              <div className="absolute top-3 left-3 text-[10px] tracking-[0.2em] text-cyan font-semibold bg-ink/80 rounded-md px-2 py-1">LIVE PREVIEW</div>
+            </div>
+            <div className="flex items-center gap-3 p-4 border-t border-line">
+              <span className="grid place-items-center size-12 rounded-2xl" style={{ background: `${color}22`, color, boxShadow: `inset 0 0 0 1px ${color}66` }}><Icon name={icon} size={22} /></span>
+              <div className="min-w-0"><div className="font-display font-semibold truncate" style={{ color }}>{name || 'Your brand'}</div><div className="text-xs text-mute truncate">{tagline || cat.name}</div></div>
+            </div>
+          </div>
         </div>
       )}
 

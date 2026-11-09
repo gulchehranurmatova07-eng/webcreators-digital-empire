@@ -23,6 +23,7 @@ function Routes({ route }: { route: string }) {
   if (route === '/empire') return <EmpireList />;
   if (route === '/empire/new') return <NewBusiness />;
   if ((p = match('/empire/:id', route))) return <BusinessDetail id={p.id} />;
+  if ((p = match('/empire/:id/demo', route))) return <BusinessDetail id={p.id} openDemo />;
   if (route === '/studio') return <StudioList />;
   if ((p = match('/studio/:id', route))) return <Editor id={p.id} />;
   if (route === '/missions') return <Missions />;

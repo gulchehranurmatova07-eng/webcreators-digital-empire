@@ -1,5 +1,5 @@
 // WEB-CREATORS design system: reusable, branded components.
-import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Icon } from './Icon';
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
@@ -90,10 +90,11 @@ export function Stat({ icon, label, value, sub, tone }: { icon: string; label: s
 }
 
 export function CoinIcon({ size = 16 }: { size?: number }) {
+  const id = `cg${useId().replace(/:/g, '')}`; // unique per instance: hidden copies must not break visible ones
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
-      <defs><linearGradient id="cg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#9cc8ff" /><stop offset="1" stopColor="#1E6BFF" /></linearGradient></defs>
-      <circle cx="12" cy="12" r="10" fill="url(#cg)" />
+      <defs><linearGradient id={id} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#9cc8ff" /><stop offset="1" stopColor="#1E6BFF" /></linearGradient></defs>
+      <circle cx="12" cy="12" r="10" fill={`url(#${id})`} />
       <circle cx="12" cy="12" r="6.5" fill="none" stroke="#071426" strokeOpacity=".45" strokeWidth="1.5" />
       <path d="M9 9.5l1.2 5 1.8-4 1.8 4 1.2-5" fill="none" stroke="#071426" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -194,6 +195,7 @@ export function Modal({ open, onClose, title, children, footer }: { open: boolea
 
 /** Small bar chart (SVG) for daily profit history. */
 export function BarChart({ data, height = 96, label }: { data: { x: string; y: number }[]; height?: number; label: string }) {
+  const gid = `bg${useId().replace(/:/g, '')}`;
   if (data.length === 0) return null;
   const max = Math.max(1, ...data.map((d) => Math.abs(d.y)));
   const hasNeg = data.some((d) => d.y < 0);
@@ -208,12 +210,12 @@ export function BarChart({ data, height = 96, label }: { data: { x: string; y: n
           const h = Math.max(1, Math.abs(d.y) * scale);
           return (
             <rect key={i} x={i * w + w * 0.18} width={w * 0.64} y={d.y >= 0 ? zero - h : zero} height={h} rx="0.8"
-              fill={d.y >= 0 ? 'url(#barg)' : '#f06a6a'} opacity={i === data.length - 1 ? 1 : 0.75}>
+              fill={d.y >= 0 ? `url(#${gid})` : '#f06a6a'} opacity={i === data.length - 1 ? 1 : 0.75}>
               <title>{`${d.x}: ${d.y >= 0 ? '+' : ''}${fmt(d.y)} coins`}</title>
             </rect>
           );
         })}
-        <defs><linearGradient id="barg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#58A6FF" /><stop offset="1" stopColor="#1E6BFF" /></linearGradient></defs>
+        <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#58A6FF" /><stop offset="1" stopColor="#1E6BFF" /></linearGradient></defs>
       </svg>
       <figcaption className="flex justify-between text-[10px] text-mute mt-1"><span>{data[0].x}</span><span>{data[data.length - 1].x}</span></figcaption>
     </figure>

@@ -9,6 +9,8 @@ import { gradeAnswer, isLessonUnlocked, lessonById } from './lessons';
 import { ACHIEVEMENTS, DAILIES, MISSIONS, STREAK_REWARDS, dailyKey, isComplete } from './missions';
 import { resaleValue, simulateDay } from './sim';
 import { makeSection, qualityScore, templateById } from './website';
+import { CHARACTERS, PERKS, type CharacterId } from './characters';
+import { demoSite, type DemoStyle } from './demo';
 import type { Business, CampaignId, CategoryId, Ctx, GameEvent, GameState, LocationId, Notification, Section, SectionType, Website } from './types';
 import { GameError } from './types';
 
@@ -147,12 +149,14 @@ const getWebsite = (d: Draft, id: string) => {
 const level = (d: Draft) => levelFromXp(d.s.xp);
 
 // ---------------- Player ----------------
-export const createPlayer = (s: GameState, ctx: Ctx, input: { name: string; avatar: string }) =>
+const validCharacter = (c: unknown): CharacterId | undefined => (CHARACTERS.some((x) => x.id === c) ? (c as CharacterId) : undefined);
+
+export const createPlayer = (s: GameState, ctx: Ctx, input: { name: string; avatar: string; character?: CharacterId }) =>
   run(s, ctx, (d) => {
     if (d.s.player) throw new GameError('Founder profile already exists.');
     const name = cleanText(input.name, { min: 2, max: 24, field: 'Founder name' });
     const avatar = (AVATARS as readonly string[]).includes(input.avatar) ? input.avatar : AVATARS[0];
-    d.s.player = { name, avatar, createdAt: ctx.now };
+    d.s.player = { name, avatar, createdAt: ctx.now, character: validCharacter(input.character) };
     refreshDaily(d);
     grant(d, 'start', { xp: 0, coins: START_COINS, label: 'Founder starting capital' });
     notify(d, `Welcome, ${name}!`, 'You have 500 virtual coins. Open your first business to get started.', 'info');
@@ -162,6 +166,13 @@ export const updateProfile = (s: GameState, ctx: Ctx, input: { name: string; ava
   run(s, ctx, (d) => {
     d.s.player!.name = cleanText(input.name, { min: 2, max: 24, field: 'Founder name' });
     if ((AVATARS as readonly string[]).includes(input.avatar)) d.s.player!.avatar = input.avatar;
+  });
+
+export const setCharacter = (s: GameState, ctx: Ctx, character: CharacterId) =>
+  run(s, ctx, (d) => {
+    const c = validCharacter(character);
+    if (!c) throw new GameError('Unknown character.');
+    d.s.player!.character = c;
   });
 
 export const setReducedMotion = (s: GameState, ctx: Ctx, on: boolean) =>
@@ -233,7 +244,7 @@ export const launchCampaign = (s: GameState, ctx: Ctx, businessId: string, campa
     if (level(d) < c.unlockLevel) throw new GameError(`${c.name} unlocks at Founder Level ${c.unlockLevel}.`);
     if (c.requiresWebsite && !b.websiteId) throw new GameError('Link a website to run a search campaign.');
     if (b.campaigns.some((x) => x.id === c.id)) throw new GameError('This campaign is already running.');
-    spend(d, c.cost, `${c.name} · ${b.name}`);
+    spend(d, Math.round(c.cost * PERKS.campaignCost(d.s.player!.character)), `${c.name} · ${b.name}`);
     b.campaigns.push({ id: c.id, daysLeft: c.days });
     d.s.stats.campaignsLaunched++;
   });
@@ -267,7 +278,7 @@ export const endDay = (s: GameState, ctx: Ctx) =>
     let customers = 0;
     d.s.businesses = d.s.businesses.map((b) => {
       const site = d.s.websites.find((w) => w.id === b.websiteId);
-      const r = simulateDay(b, site, day);
+      const r = simulateDay(b, site, day, d.s.player!.character);
       total += r.report.profit;
       customers += r.report.customers;
       d.s.stats.customersServed += r.report.customers;
@@ -363,6 +374,30 @@ export const deleteWebsite = (s: GameState, ctx: Ctx, websiteId: string) =>
     d.s.businesses.forEach((b) => { if (b.websiteId === websiteId) b.websiteId = null; });
   });
 
+/** Generates a complete demo website from a business brand and links it to the business. */
+export const generateDemoSite = (s: GameState, ctx: Ctx, input: { businessId: string; style: DemoStyle; variant: number }) =>
+  run(s, ctx, (d) => {
+    const b = getBusiness(d, input.businessId);
+    if (d.s.websites.length >= 12) throw new GameError('You can have up to 12 websites. Delete one in the Studio first.');
+    const demo = demoSite(b, input.style, input.variant);
+    const sections = demo.sections.map(([type, data]) => makeSection(type, nextId(d, 's'), data as never));
+    const site: Website = { id: nextId(d, 'w'), name: b.name, templateId: `demo-${input.style}`, theme: demo.theme, sections, published: false, createdAt: ctx.now, updatedAt: ctx.now };
+    d.s.websites.push(site);
+    b.websiteId = site.id;
+    notify(d, `Demo website for ${b.name}`, 'Your demo is ready. Polish it in the Studio, then publish it to attract customers.', 'success');
+  });
+
+export const duplicateSection = (s: GameState, ctx: Ctx, websiteId: string, sectionId: string) =>
+  run(s, ctx, (d) => {
+    const w = getWebsite(d, websiteId);
+    const i = w.sections.findIndex((x) => x.id === sectionId);
+    if (i < 0) throw new GameError('Section not found.');
+    if (w.sections.length >= 16) throw new GameError('Maximum 16 sections per website.');
+    w.sections.splice(i + 1, 0, { ...structuredClone(w.sections[i]), id: nextId(d, 's') });
+    w.updatedAt = ctx.now;
+    d.s.daily.siteEdits++;
+  });
+
 // ---------------- Missions ----------------
 export const claimMission = (s: GameState, ctx: Ctx, missionId: string) =>
   run(s, ctx, (d) => {
@@ -408,7 +443,8 @@ export const completeLesson = (s: GameState, ctx: Ctx, lessonId: string, answers
       return;
     }
     d.s.stats.lessonsCompleted.push(lesson.id);
-    grant(d, `lesson:${lesson.id}`, { xp: lesson.xp, coins: lesson.coins, label: `Lesson: ${lesson.title}` });
+    const m = PERKS.lessonReward(d.s.player!.character);
+    grant(d, `lesson:${lesson.id}`, { xp: Math.round(lesson.xp * m), coins: Math.round(lesson.coins * m), label: `Lesson: ${lesson.title}` });
   });
 
 // ---------------- Save validation ----------------

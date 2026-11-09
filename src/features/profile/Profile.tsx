@@ -5,13 +5,17 @@ import { AVATARS, RANKS } from '../../engine/config';
 import { ACHIEVEMENTS, MISSIONS } from '../../engine/missions';
 import { levelInfo } from '../../store/selectors';
 import { navigate } from '../../app/router';
-import { Avatar, Badge, Button, Card, CardTitle, Coins, Field, Modal, Progress, cx, fmt, inputCls } from '../../ui/kit';
+import { Badge, Button, Card, CardTitle, Coins, Field, Modal, Progress, cx, fmt, inputCls } from '../../ui/kit';
 import { Icon } from '../../ui/Icon';
+import { FounderPortrait } from '../../ui/hud';
+import { CHARACTERS, characterById, portrait } from '../../engine/characters';
 
 export function Profile() {
   const g = useGame((x) => x);
   const li = levelInfo(g.xp);
   const [editing, setEditing] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const ch = characterById(g.player!.character);
   const [name, setName] = useState(g.player!.name);
   const [avatar, setAvatar] = useState(g.player!.avatar);
   const unlocked = ACHIEVEMENTS.filter((a) => g.claimed[`ach:${a.id}`]);
@@ -33,14 +37,16 @@ export function Profile() {
       <Card className="relative overflow-hidden p-6">
         <div className="absolute -left-20 -top-20 size-72 rounded-full bg-brand/20 blur-3xl pointer-events-none" />
         <div className="relative flex flex-col sm:flex-row sm:items-center gap-5">
-          <Avatar name={g.player!.avatar} size={88} />
+          <FounderPortrait size={104} />
           <div className="flex-1 min-w-0">
             <h1 className="font-display text-3xl font-semibold tracking-tight truncate">{g.player!.name}</h1>
+            {ch && <p className="text-sm mt-1"><span className="font-semibold" style={{ color: ch.accent }}>{ch.title}</span><span className="text-mute"> · {ch.perk}</span></p>}
             <div className="flex flex-wrap gap-2 mt-2"><Badge>Founder Level {li.level}</Badge><Badge tone="mute">{li.rank}</Badge><Badge tone="mute">Founder since {new Date(g.player!.createdAt).toLocaleDateString()}</Badge></div>
             <div className="mt-4 max-w-md"><div className="flex justify-between text-xs mb-1"><span className="text-mute">{fmt(g.xp)} XP</span><span className="text-mute">{li.max ? 'Max level' : `Level ${li.level + 1} at ${fmt(li.nextAt)}`}</span></div><Progress value={li.into} max={li.needed} label="Level progress" /></div>
           </div>
           <div className="flex sm:flex-col gap-2">
-            <Button variant="secondary" icon="palette" onClick={() => { setName(g.player!.name); setAvatar(g.player!.avatar); setEditing(true); }}>Edit profile</Button>
+            <Button variant="secondary" icon="users" onClick={() => setSwitching(true)}>Switch founder</Button>
+            <Button variant="secondary" icon="palette" onClick={() => { setName(g.player!.name); setAvatar(g.player!.avatar); setEditing(true); }}>Edit name</Button>
             <Button variant="ghost" icon="settings" onClick={() => navigate('/settings')}>Settings</Button>
           </div>
         </div>
@@ -100,11 +106,27 @@ export function Profile() {
         footer={<><Button variant="ghost" onClick={() => setEditing(false)}>Cancel</Button><Button disabled={name.trim().length < 2} onClick={() => { if (act((s, c) => E.updateProfile(s, c, { name, avatar }))) setEditing(false); }}>Save</Button></>}>
         <div className="space-y-4">
           <Field label="Founder name"><input className={inputCls} value={name} maxLength={24} onChange={(e) => setName(e.target.value)} /></Field>
-          <div className="grid grid-cols-8 gap-2">
+          {!ch && <div className="grid grid-cols-8 gap-2">
             {AVATARS.map((a) => (
               <button key={a} aria-label={a} aria-pressed={avatar === a} onClick={() => setAvatar(a)} className={cx('grid place-items-center aspect-square rounded-xl border', avatar === a ? 'border-brand bg-brand/20 text-white' : 'border-line text-mute')}><Icon name={a} size={16} /></button>
             ))}
-          </div>
+          </div>}
+        </div>
+      </Modal>
+
+      <Modal open={switching} onClose={() => setSwitching(false)} title="Switch founder">
+        <p className="mb-4">Your progress stays the same. Only the portrait and perk change.</p>
+        <div className="grid grid-cols-2 gap-3">
+          {CHARACTERS.map((c) => (
+            <button key={c.id} onClick={() => { if (act((s, x) => E.setCharacter(s, x, c.id))) setSwitching(false); }} aria-pressed={ch?.id === c.id}
+              className={cx('relative overflow-hidden rounded-xl border text-left', ch?.id === c.id ? 'border-cyan' : 'border-line hover:border-line-strong')}>
+              <img src={portrait(c.id)} alt="" className="w-full aspect-[4/5] object-cover object-top" />
+              <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-ink to-transparent">
+                <div className="font-display font-semibold text-sm text-white">{c.name}</div>
+                <div className="text-[10px] text-soft">{c.perkShort}</div>
+              </div>
+            </button>
+          ))}
         </div>
       </Modal>
     </div>
